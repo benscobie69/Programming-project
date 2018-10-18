@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+    <head>
+    <title>sprite</title>
+
+</head>
+
+<body>
+    <canvas id='GameCanvas' width='350' height='350'></canvas>
+    <script>
+        window.onload = function() {
+            var gc = document.getElementById('GameCanvas');
+            var context = gc.getContext('2d');
+            var sprite = new Image();
+
+            sprite.onload = function() {
+                context.drawImage(sprite, 0, 0);
+            }
+                sprite.src = 'ship.png';
+            }
+    </script>
+</body>
+</html>
