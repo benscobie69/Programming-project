@@ -1,0 +1,225 @@
+<html>
+
+<head>
+    <title>SpaceInvaders</title>
+    <script src="player.js">
+    </script>
+</head>
+
+<body>
+    <canvas id="GameCanvas" width="400" height="400"></canvas>
+
+    <script>
+        var canvas, canvasContext;
+
+        window.onload = function() {
+            canvas = document.getElementById('GameCanvas');
+            canvasContext = canvas.getContext('2d');
+
+            document.addEventListener('keydown', keyPressed);
+            document.addEventListener('keyup', keyReleased);
+
+            setInterval(mainLoop, 1000 / 60);
+        }
+
+
+        const UP_KEY = 38; // key bindings
+        const DOWN_KEY = 40;
+        const LEFT_KEY = 37;
+        const RIGHT_KEY = 39;
+        const SPACE_KEY = 32;
+
+        //Ship stuff
+//        var shipXpos = 200;
+//        const shipYpos = 350;
+//        var shipXspeed = 7;
+//        //        var shipYspeed = 4;
+//        const SHIP_SIZE = 30;
+
+
+
+        var upKeyPressed = false;
+        var downKeyPressed = false;
+        var leftKeyPressed = false;
+        var rightKeyPressed = false;
+        var spaceKeyPressed = false;
+
+        var enemyCount = 5;
+        var level = 1;
+        var setup = true;
+        var score = 0;
+
+        var shooting = false;
+        var bullets = [];
+
+        var enemies = [];
+        
+        var shipPic = new Image();
+        shipPic.src = 'ship.png';    
+        
+        var shipXpos = 0;
+        const SHIP_WIDTH = 50;
+        const SHIP_HEIGHT = 69;
+        var shipYpos = 400 - SHIP_HEIGHT;
+        var shipXspeed = 5;
+        
+        var ship = new Player(shipPic,shipXpos,shipYpos,SHIP_WIDTH,SHIP_HEIGHT,shipXspeed);
+
+        function mainLoop() {
+            colorRect(0, 0, canvas.width, canvas.height, 'black'); // background
+//            colorRect(shipXpos, shipYpos, SHIP_SIZE, SHIP_SIZE, 'hotpink'); // ship
+            
+            ship.drawShip();
+            ship.shipMovement();
+            
+            drawText('25pt ARIAL BLACK', 'red', 'Score: '+ score, 20, 40);
+
+            if (setup) {
+                enemySetUp();
+                setup = false;
+            }
+
+//            shipMovement();
+
+            if (enemies.length > 0) {
+                enemies.forEach(function(item, index) {
+                    item.drawEnemy();
+                    item.enemyMove();
+                });
+            }
+
+            if (bullets.length > 0) {
+                bullets.forEach(function(item, index) {
+                    item.drawBullet();
+                    item.move();
+
+                    if (item.outOfBounds() || item.hasCollided()) {
+                        delete bullets[index];
+                    }
+                });
+                bullets = bullets.filter(item => item !== undefined);
+            }
+        }
+
+
+        function enemySetUp() {
+            for (i = 0; i < enemyCount * level; i++) {
+                drawMakeEnemies();
+            }
+        }
+
+
+
+        function drawMake() {
+
+            const BULLET_WIDTH = 6;
+            const BULLET_HEIGHT = 10;
+            var bulletXpos = ship.x + ship.w / 2 - BULLET_WIDTH / 2;
+            var bulletYpos = ship.y - BULLET_HEIGHT;
+            var bulletYspeed = 5;
+
+            var b = new bullet(bulletXpos, bulletYpos, BULLET_WIDTH, BULLET_HEIGHT, 'white', bulletYspeed);
+            bullets.push(b);
+        }
+
+        function drawMakeEnemies() {
+
+            var eWidth = 25;
+            var eHeight = 25;
+            var eXpos = Math.random() * canvas.width - eWidth;
+            var eYpos = 0 + eHeight;
+            var eYspeed = 3;
+            var delay = 5;
+            var delayRate = 0.1;
+
+            var e = new Enemy(eXpos, eYpos, eWidth, eHeight, 'red', eYspeed, delay, delayRate);
+            enemies.push(e);
+        }
+
+        class Enemy {
+            constructor(x, y, w, h, c, ySpeed, delay, delayRate) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.c = c;
+                this.ySpeed = ySpeed;
+                this.delay = delay;
+                this.delayRate = delayRate;
+            }
+            drawEnemy() {
+                canvasContext.fillStyle = this.c;
+                canvasContext.fillRect(this.x, this.y, this.w, this.h);
+            }
+            enemyMove() {
+                this.y += this.ySpeed;
+
+                if (this.y > canvas.height) {
+                    this.y = 0 - this.h;
+                }
+            }
+
+        }
+
+        class bullet {
+            constructor(x, y, w, h, c, ySpeed) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.c = c;
+                this.ySpeed = ySpeed;
+            }
+            drawBullet() {
+                canvasContext.fillStyle = this.c;
+                canvasContext.fillRect(this.x, this.y, this.w, this.h);
+            }
+            move() {
+                this.y -= this.ySpeed;
+            }
+            outOfBounds() {
+                return this.y < 0 || this.y > canvas.height || this.x < 0 || this.x > canvas.width;
+            }
+
+
+            hasHitItem(item) { // item = enemy from forEach loop
+                return ((this.x + this.w) >= item.x && this.x <= (item.x + item.w)) // x collision
+                    &&
+                    (this.y >= item.y && this.y <= (item.y + item.h)); // y collision
+            }
+            hasHitEnemy(enemy) { // using hasHitItem func xy co-ord check each item
+                return this.hasHitItem(enemy);
+            }
+            hasCollided() {
+                var self = this;
+                var collided = false;
+
+                enemies.forEach(function(enemy, i) {
+                    if (self.hasHitEnemy(enemy)) {
+                        delete enemies[i];
+                        collided = true;
+                    }
+                });
+
+                enemies = enemies.filter(item => item !== undefined);
+                return collided;
+
+            }
+        }
+
+        function drawText(style, color, text, x, y) {
+            canvasContext.font = style;
+            canvasContext.fillStyle = color; //This is for drawing the text
+            canvasContext.fillText(text, x, y);
+        }
+        
+        
+
+        function colorRect(x,y,w,h,c){
+            canvasContext.fillStyle = c;
+            canvasContext.fillRect(x,y,w,h);
+        }
+    </script>
+</body>
+
+</html>
